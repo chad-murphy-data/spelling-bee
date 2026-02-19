@@ -1,0 +1,196 @@
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import WordListInput from './components/WordListInput'
+import PracticeCard from './components/PracticeCard'
+import ScoreBoard from './components/ScoreBoard'
+import ProgressView from './components/ProgressView'
+import { useMerriamWebster } from './hooks/useMerriamWebster'
+import { useWordProgress } from './hooks/useWordProgress'
+
+const WORDLIST_STORAGE_KEY = 'spelling_bee_wordlist'
+
+function pickWeightedWord(words, progressData, lastWord) {
+  function getWeight(progress) {
+    if (!progress) return 10
+    if (progress.mastered) return 1
+    if (progress.correct_streak === 0 && progress.total_attempts > 0) return 15
+    return Math.max(1, 10 - progress.correct_streak * 2)
+  }
+
+  const weights = words.map(w => getWeight(progressData[w]))
+  const totalWeight = weights.reduce((sum, w) => sum + w, 0)
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    let rand = Math.random() * totalWeight
+    for (let i = 0; i < words.length; i++) {
+      rand -= weights[i]
+      if (rand <= 0) {
+        if (words[i] !== lastWord || words.length === 1) {
+          return words[i]
+        }
+        break
+      }
+    }
+  }
+  return words[Math.floor(Math.random() * words.length)]
+}
+
+export default function App() {
+  const [view, setView] = useState('loading') // loading | input | practice | progress
+  const [wordData, setWordData] = useState(null)
+  const [currentWord, setCurrentWord] = useState(null)
+  const [words, setWords] = useState([])
+  const [sessionCorrect, setSessionCorrect] = useState(0)
+  const [sessionTotal, setSessionTotal] = useState(0)
+  const [sessionStreak, setSessionStreak] = useState(0)
+  const [wordKey, setWordKey] = useState(0)
+
+  const { fetchWord, loading: mwLoading } = useMerriamWebster()
+  const { progressMap, loadAllProgress, recordAttempt } = useWordProgress()
+  const progressRef = useRef(progressMap)
+  progressRef.current = progressMap
+
+  const masteredCount = useMemo(() => {
+    return Object.values(progressMap).filter(p => p.mastered).length
+  }, [progressMap])
+
+  const loadWordData = useCallback(async (word) => {
+    setWordData(null)
+    const data = await fetchWord(word)
+    setWordData(data)
+  }, [fetchWord])
+
+  const advanceWord = useCallback((wordList, progress, lastWord) => {
+    const word = pickWeightedWord(wordList, progress, lastWord)
+    setCurrentWord(word)
+    setWordKey(k => k + 1)
+    loadWordData(word)
+    return word
+  }, [loadWordData])
+
+  // On mount, check for saved word list
+  useEffect(() => {
+    const saved = localStorage.getItem(WORDLIST_STORAGE_KEY)
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          startSession(parsed)
+          return
+        }
+      } catch { /* ignore */ }
+    }
+    setView('input')
+  }, [])
+
+  const startSession = useCallback(async (wordList) => {
+    localStorage.setItem(WORDLIST_STORAGE_KEY, JSON.stringify(wordList))
+    setWords(wordList)
+    const progress = await loadAllProgress()
+    setView('practice')
+    advanceWord(wordList, progress, null)
+  }, [loadAllProgress, advanceWord])
+
+  const handleWordsLoaded = useCallback((wordList) => {
+    startSession(wordList)
+  }, [startSession])
+
+  const handleSubmit = useCallback((correct) => {
+    setSessionTotal(t => t + 1)
+    if (correct) {
+      setSessionCorrect(c => c + 1)
+      setSessionStreak(s => s + 1)
+    } else {
+      setSessionStreak(0)
+    }
+    recordAttempt(currentWord, correct)
+  }, [currentWord, recordAttempt])
+
+  const handleNext = useCallback(() => {
+    advanceWord(words, progressRef.current, currentWord)
+  }, [words, currentWord, advanceWord])
+
+  const handleChangeList = useCallback(() => {
+    localStorage.removeItem(WORDLIST_STORAGE_KEY)
+    setView('input')
+    setSessionCorrect(0)
+    setSessionTotal(0)
+    setSessionStreak(0)
+    setCurrentWord(null)
+    setWords([])
+  }, [])
+
+  return (
+    <div className="app">
+      <header className="header">
+        <div className="header__inner">
+          <h1 className="header__title">Spelling Bee Trainer</h1>
+          {view === 'practice' && (
+            <nav className="header__nav">
+              <button className="header__nav-btn" onClick={() => setView('progress')}>
+                Progress
+              </button>
+              <button className="header__nav-btn" onClick={handleChangeList}>
+                Change List
+              </button>
+            </nav>
+          )}
+          {view === 'progress' && (
+            <nav className="header__nav">
+              <button className="header__nav-btn" onClick={() => setView('practice')}>
+                Practice
+              </button>
+            </nav>
+          )}
+        </div>
+      </header>
+
+      <main className="main">
+        {view === 'loading' && (
+          <div className="loading-state">Loading...</div>
+        )}
+
+        {view === 'input' && (
+          <WordListInput onWordsLoaded={handleWordsLoaded} />
+        )}
+
+        {view === 'practice' && currentWord && (
+          <div className="practice-layout">
+            <ScoreBoard
+              sessionCorrect={sessionCorrect}
+              sessionTotal={sessionTotal}
+              currentStreak={sessionStreak}
+              totalWords={words.length}
+              masteredCount={masteredCount}
+            />
+            <PracticeCard
+              key={wordKey}
+              word={currentWord}
+              wordData={wordData}
+              onSubmit={handleSubmit}
+              onNext={handleNext}
+              loading={mwLoading && !wordData}
+            />
+          </div>
+        )}
+
+        {view === 'progress' && (
+          <ProgressView
+            progressMap={progressMap}
+            onBack={() => setView('practice')}
+          />
+        )}
+      </main>
+
+      <footer className="footer">
+        <div className="footer__inner">
+          <div className="footer__attribution">
+            <svg className="footer__mw-logo" viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+            </svg>
+            <span>Powered by Merriam-Webster</span>
+          </div>
+        </div>
+      </footer>
+    </div>
+  )
+}
