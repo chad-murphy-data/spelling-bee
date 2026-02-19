@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import AudioButton from './AudioButton'
 
 // Ranked list of preferred English voices (best first).
-// Chrome ships Google neural voices, Edge ships Microsoft ones.
 const PREFERRED_VOICES = [
   'Google US English',
   'Google UK English Female',
@@ -10,34 +9,64 @@ const PREFERRED_VOICES = [
   'Microsoft Zira',
   'Microsoft David',
   'Microsoft Mark',
-  'Samantha',        // macOS high-quality voice
-  'Karen',           // macOS Australian
-  'Daniel',          // macOS British
+  'Samantha',
+  'Karen',
+  'Daniel',
 ]
 
-function pickBestVoice() {
-  const voices = window.speechSynthesis.getVoices()
-  const english = voices.filter(v => v.lang.startsWith('en'))
-  // Try preferred list first
-  for (const name of PREFERRED_VOICES) {
-    const match = english.find(v => v.name === name)
+const STORAGE_KEY = 'spelling-bee-tts-voice'
+
+function getEnglishVoices() {
+  return window.speechSynthesis.getVoices().filter(v => v.lang.startsWith('en'))
+}
+
+function pickBestVoice(voices) {
+  // Check localStorage for a saved choice
+  const saved = localStorage.getItem(STORAGE_KEY)
+  if (saved) {
+    const match = voices.find(v => v.name === saved)
     if (match) return match
   }
-  // Fall back to any English voice, preferring non-default local voices
-  return english.find(v => !v.localService) || english[0] || null
+  for (const name of PREFERRED_VOICES) {
+    const match = voices.find(v => v.name === name)
+    if (match) return match
+  }
+  return voices.find(v => !v.localService) || voices[0] || null
 }
 
 function useTTS() {
-  const [speaking, setSpeaking] = useState(null) // 'definition' | 'etymology' | null
+  const [speaking, setSpeaking] = useState(null)
+  const [voices, setVoices] = useState([])
+  const [selectedVoice, setSelectedVoice] = useState(null)
   const voiceRef = useRef(null)
 
-  // Voices load async in Chrome — listen for the event once
   useEffect(() => {
-    const update = () => { voiceRef.current = pickBestVoice() }
+    const update = () => {
+      const english = getEnglishVoices()
+      setVoices(english)
+      const best = pickBestVoice(english)
+      setSelectedVoice(best?.name || null)
+      voiceRef.current = best
+    }
     update()
     window.speechSynthesis.addEventListener('voiceschanged', update)
     return () => window.speechSynthesis.removeEventListener('voiceschanged', update)
   }, [])
+
+  const changeVoice = useCallback((name) => {
+    const match = voices.find(v => v.name === name)
+    if (match) {
+      voiceRef.current = match
+      setSelectedVoice(name)
+      localStorage.setItem(STORAGE_KEY, name)
+      // Quick preview so the user can hear it
+      window.speechSynthesis.cancel()
+      const preview = new SpeechSynthesisUtterance('This is how I sound.')
+      preview.voice = match
+      preview.rate = 0.9
+      window.speechSynthesis.speak(preview)
+    }
+  }, [voices])
 
   const speak = useCallback((text, label) => {
     window.speechSynthesis.cancel()
@@ -59,7 +88,7 @@ function useTTS() {
     setSpeaking(null)
   }, [])
 
-  return { speaking, speak, cancel }
+  return { speaking, speak, cancel, voices, selectedVoice, changeVoice }
 }
 
 export default function PracticeCard({ word, wordData, onSubmit, onNext, loading }) {
@@ -67,7 +96,7 @@ export default function PracticeCard({ word, wordData, onSubmit, onNext, loading
   const [result, setResult] = useState(null) // { correct: bool }
   const [revealed, setRevealed] = useState({}) // { definition: bool, etymology: bool }
   const inputRef = useRef(null)
-  const { speaking, speak, cancel } = useTTS()
+  const { speaking, speak, cancel, voices, selectedVoice, changeVoice } = useTTS()
 
   useEffect(() => {
     setGuess('')
@@ -99,6 +128,24 @@ export default function PracticeCard({ word, wordData, onSubmit, onNext, loading
         ) : (
           <>
             <AudioButton audioUrl={wordData?.audioUrl} />
+
+            {voices.length > 1 && (
+              <div className="voice-picker">
+                <label className="voice-picker__label" htmlFor="voice-select">TTS Voice</label>
+                <select
+                  id="voice-select"
+                  className="voice-picker__select"
+                  value={selectedVoice || ''}
+                  onChange={(e) => changeVoice(e.target.value)}
+                >
+                  {voices.map(v => (
+                    <option key={v.name} value={v.name}>
+                      {v.name} ({v.lang})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {wordData?.definition && (
               <div className="practice-card__clue">

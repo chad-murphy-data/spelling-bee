@@ -271,6 +271,45 @@ body {
 }
 
 /* ===================================
+   Voice Picker
+   =================================== */
+
+.voice-picker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.voice-picker__label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gray-400);
+  white-space: nowrap;
+}
+
+.voice-picker__select {
+  font-family: inherit;
+  font-size: 0.8125rem;
+  padding: 0.3rem 0.5rem;
+  border: 1.5px solid var(--gray-300);
+  border-radius: 6px;
+  background: var(--white);
+  color: var(--gray-700);
+  cursor: pointer;
+  max-width: 240px;
+}
+
+.voice-picker__select:focus {
+  outline: none;
+  border-color: var(--navy);
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.1);
+}
+
+/* ===================================
    Practice Card
    =================================== */
 
