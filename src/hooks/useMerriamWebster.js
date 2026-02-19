@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 
 const API_KEY = import.meta.env.VITE_MW_API_KEY
+const CACHE_VERSION = 2
 
 function buildAudioUrl(filename) {
   if (!filename) return null
@@ -49,7 +50,7 @@ export function useMerriamWebster() {
   const [error, setError] = useState(null)
 
   const fetchWord = useCallback(async (word) => {
-    const cacheKey = `mw_cache_${word.toLowerCase()}`
+    const cacheKey = `mw_v${CACHE_VERSION}_${word.toLowerCase()}`
     const cached = localStorage.getItem(cacheKey)
     if (cached) {
       return JSON.parse(cached)
