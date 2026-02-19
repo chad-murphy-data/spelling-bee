@@ -4,6 +4,7 @@ import PracticeCard from './components/PracticeCard'
 import ScoreBoard from './components/ScoreBoard'
 import ProgressView from './components/ProgressView'
 import SessionReport from './components/SessionReport'
+import HowItWorks from './components/HowItWorks'
 import { useMerriamWebster } from './hooks/useMerriamWebster'
 import { useWordProgress } from './hooks/useWordProgress'
 
@@ -47,6 +48,7 @@ export default function App() {
   const [wordKey, setWordKey] = useState(0)
   const [sessionLog, setSessionLog] = useState([])
   const [funMode, setFunMode] = useState(() => localStorage.getItem(FUN_MODE_KEY) === 'true')
+  const [showHelp, setShowHelp] = useState(false)
 
   const { fetchWord, loading: mwLoading } = useMerriamWebster()
   const { progressMap, loadAllProgress, recordAttempt } = useWordProgress()
@@ -151,6 +153,13 @@ export default function App() {
           <h1 className="header__title">Spelling Bee Trainer</h1>
           <nav className="header__nav">
             <button
+              className="header__nav-btn"
+              onClick={() => setShowHelp(h => !h)}
+              title="How it works"
+            >
+              ?
+            </button>
+            <button
               className={`header__nav-btn ${funMode ? 'header__nav-btn--fun-active' : ''}`}
               onClick={toggleFunMode}
               title={funMode ? 'Disable fun mode' : 'Enable fun mode'}
@@ -185,12 +194,17 @@ export default function App() {
       </header>
 
       <main className="main">
+        {showHelp && <HowItWorks />}
+
         {view === 'loading' && (
           <div className="loading-state">Loading...</div>
         )}
 
         {view === 'input' && (
-          <WordListInput onWordsLoaded={handleWordsLoaded} />
+          <>
+            <HowItWorks />
+            <WordListInput onWordsLoaded={handleWordsLoaded} />
+          </>
         )}
 
         {view === 'practice' && currentWord && (
