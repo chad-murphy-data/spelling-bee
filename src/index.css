@@ -541,6 +541,11 @@ body {
   cursor: pointer;
 }
 
+.btn--loading {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .wordlist-input__textarea {
   width: 100%;
   font-family: 'Plus Jakarta Sans', monospace;
