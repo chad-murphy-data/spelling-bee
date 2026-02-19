@@ -91,10 +91,31 @@ function useTTS() {
   return { speaking, speak, cancel, voices, selectedVoice, changeVoice }
 }
 
-export default function PracticeCard({ word, wordData, onSubmit, onNext, loading }) {
+const FUN_MESSAGES = [
+  'You absolute legend!',
+  'Spelling wizard!',
+  'Nailed it!',
+  'Big brain energy!',
+  'S-P-E-C-T-A-C-U-L-A-R!',
+  'Chef\u2019s kiss!',
+  'Unstoppable!',
+  'Too easy for you!',
+  'Mic drop!',
+  'Flawless victory!',
+]
+
+async function fireConfetti() {
+  const confetti = (await import('canvas-confetti')).default
+  // Burst from both sides
+  confetti({ particleCount: 80, spread: 70, origin: { x: 0.2, y: 0.6 } })
+  confetti({ particleCount: 80, spread: 70, origin: { x: 0.8, y: 0.6 } })
+}
+
+export default function PracticeCard({ word, wordData, onSubmit, onNext, loading, funMode }) {
   const [guess, setGuess] = useState('')
   const [result, setResult] = useState(null) // { correct: bool }
   const [revealed, setRevealed] = useState({}) // { definition: bool, etymology: bool }
+  const [funMessage, setFunMessage] = useState(null)
   const inputRef = useRef(null)
   const { speaking, speak, cancel, voices, selectedVoice, changeVoice } = useTTS()
 
@@ -102,6 +123,7 @@ export default function PracticeCard({ word, wordData, onSubmit, onNext, loading
     setGuess('')
     setResult(null)
     setRevealed({})
+    setFunMessage(null)
     cancel()
     inputRef.current?.focus()
   }, [word, cancel])
@@ -112,7 +134,11 @@ export default function PracticeCard({ word, wordData, onSubmit, onNext, loading
     const correct = guess.trim().toLowerCase() === word.toLowerCase()
     setResult({ correct })
     onSubmit(correct)
-  }, [guess, word, onSubmit, result])
+    if (correct && funMode) {
+      setFunMessage(FUN_MESSAGES[Math.floor(Math.random() * FUN_MESSAGES.length)])
+      fireConfetti()
+    }
+  }, [guess, word, onSubmit, result, funMode])
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && result !== null) {
@@ -253,13 +279,13 @@ export default function PracticeCard({ word, wordData, onSubmit, onNext, loading
       </form>
 
       {result !== null && (
-        <div className={`practice-card__result ${result.correct ? 'practice-card__result--correct' : 'practice-card__result--incorrect'}`}>
+        <div className={`practice-card__result ${result.correct ? 'practice-card__result--correct' : 'practice-card__result--incorrect'} ${result.correct && funMode ? 'practice-card__result--fun' : ''}`}>
           <div className="practice-card__result-icon">
             {result.correct ? '\u2713' : '\u2717'}
           </div>
           <div className="practice-card__result-text">
             {result.correct ? (
-              <span>Correct!</span>
+              <span>{funMode && funMessage ? funMessage : 'Correct!'}</span>
             ) : (
               <span>The correct spelling is <strong>{word}</strong></span>
             )}

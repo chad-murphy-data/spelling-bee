@@ -3,10 +3,12 @@ import WordListInput from './components/WordListInput'
 import PracticeCard from './components/PracticeCard'
 import ScoreBoard from './components/ScoreBoard'
 import ProgressView from './components/ProgressView'
+import SessionReport from './components/SessionReport'
 import { useMerriamWebster } from './hooks/useMerriamWebster'
 import { useWordProgress } from './hooks/useWordProgress'
 
 const WORDLIST_STORAGE_KEY = 'spelling_bee_wordlist'
+const FUN_MODE_KEY = 'spelling_bee_fun_mode'
 
 function pickWeightedWord(words, progressData, lastWord) {
   function getWeight(progress) {
@@ -35,7 +37,7 @@ function pickWeightedWord(words, progressData, lastWord) {
 }
 
 export default function App() {
-  const [view, setView] = useState('loading') // loading | input | practice | progress
+  const [view, setView] = useState('loading') // loading | input | practice | progress | report
   const [wordData, setWordData] = useState(null)
   const [currentWord, setCurrentWord] = useState(null)
   const [words, setWords] = useState([])
@@ -43,6 +45,8 @@ export default function App() {
   const [sessionTotal, setSessionTotal] = useState(0)
   const [sessionStreak, setSessionStreak] = useState(0)
   const [wordKey, setWordKey] = useState(0)
+  const [sessionLog, setSessionLog] = useState([])
+  const [funMode, setFunMode] = useState(() => localStorage.getItem(FUN_MODE_KEY) === 'true')
 
   const { fetchWord, loading: mwLoading } = useMerriamWebster()
   const { progressMap, loadAllProgress, recordAttempt } = useWordProgress()
@@ -52,6 +56,14 @@ export default function App() {
   const masteredCount = useMemo(() => {
     return Object.values(progressMap).filter(p => p.mastered).length
   }, [progressMap])
+
+  const toggleFunMode = useCallback(() => {
+    setFunMode(prev => {
+      const next = !prev
+      localStorage.setItem(FUN_MODE_KEY, String(next))
+      return next
+    })
+  }, [])
 
   const loadWordData = useCallback(async (word) => {
     setWordData(null)
@@ -102,6 +114,7 @@ export default function App() {
     } else {
       setSessionStreak(0)
     }
+    setSessionLog(log => [...log, { word: currentWord, correct }])
     recordAttempt(currentWord, correct)
   }, [currentWord, recordAttempt])
 
@@ -115,32 +128,59 @@ export default function App() {
     setSessionCorrect(0)
     setSessionTotal(0)
     setSessionStreak(0)
+    setSessionLog([])
     setCurrentWord(null)
     setWords([])
   }, [])
 
+  const handleShowReport = useCallback(() => {
+    setView('report')
+  }, [])
+
+  const handleContinuePractice = useCallback(() => {
+    setView('practice')
+    if (!currentWord) {
+      advanceWord(words, progressRef.current, null)
+    }
+  }, [currentWord, words, advanceWord])
+
   return (
-    <div className="app">
+    <div className={`app ${funMode ? 'app--fun' : ''}`}>
       <header className="header">
         <div className="header__inner">
           <h1 className="header__title">Spelling Bee Trainer</h1>
-          {view === 'practice' && (
-            <nav className="header__nav">
-              <button className="header__nav-btn" onClick={() => setView('progress')}>
-                Progress
-              </button>
-              <button className="header__nav-btn" onClick={handleChangeList}>
-                Change List
-              </button>
-            </nav>
-          )}
-          {view === 'progress' && (
-            <nav className="header__nav">
+          <nav className="header__nav">
+            <button
+              className={`header__nav-btn ${funMode ? 'header__nav-btn--fun-active' : ''}`}
+              onClick={toggleFunMode}
+              title={funMode ? 'Disable fun mode' : 'Enable fun mode'}
+            >
+              {funMode ? '\u2728 Fun!' : '\u2728'}
+            </button>
+            {view === 'practice' && (
+              <>
+                <button className="header__nav-btn" onClick={handleShowReport}>
+                  Report
+                </button>
+                <button className="header__nav-btn" onClick={() => setView('progress')}>
+                  Progress
+                </button>
+                <button className="header__nav-btn" onClick={handleChangeList}>
+                  Change List
+                </button>
+              </>
+            )}
+            {view === 'progress' && (
               <button className="header__nav-btn" onClick={() => setView('practice')}>
                 Practice
               </button>
-            </nav>
-          )}
+            )}
+            {view === 'report' && (
+              <button className="header__nav-btn" onClick={() => setView('practice')}>
+                Practice
+              </button>
+            )}
+          </nav>
         </div>
       </header>
 
@@ -169,6 +209,7 @@ export default function App() {
               onSubmit={handleSubmit}
               onNext={handleNext}
               loading={mwLoading && !wordData}
+              funMode={funMode}
             />
           </div>
         )}
@@ -177,6 +218,14 @@ export default function App() {
           <ProgressView
             progressMap={progressMap}
             onBack={() => setView('practice')}
+          />
+        )}
+
+        {view === 'report' && (
+          <SessionReport
+            sessionLog={sessionLog}
+            onContinue={handleContinuePractice}
+            onEndSession={handleChangeList}
           />
         )}
       </main>
