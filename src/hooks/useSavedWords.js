@@ -39,11 +39,13 @@ export function useSavedWords() {
       // Clear old list and insert new one
       const { error: delError } = await supabase.from('saved_words').delete().neq('word', '')
       if (delError) console.error('Failed to delete old words:', delError)
-      const rows = words.map(w => ({ word: w }))
-      // Supabase has a 1000-row insert limit, batch if needed
+      // Deduplicate words to avoid primary key conflicts
+      const unique = [...new Set(words)]
+      const rows = unique.map(w => ({ word: w }))
+      // Supabase has a 1000-row limit, batch if needed; upsert to handle any dupes
       for (let i = 0; i < rows.length; i += 500) {
-        const { error: insError } = await supabase.from('saved_words').insert(rows.slice(i, i + 500))
-        if (insError) console.error('Failed to insert words batch:', insError)
+        const { error: insError } = await supabase.from('saved_words').upsert(rows.slice(i, i + 500), { onConflict: 'word' })
+        if (insError) console.error('Failed to upsert words batch:', insError)
       }
     } catch (err) {
       console.error('Failed to save words to Supabase:', err)
