@@ -64,5 +64,15 @@ export function useWordProgress() {
     })
   }, [])
 
-  return { progressMap, loadAllProgress, recordAttempt, loading }
+  const clearAllProgress = useCallback(async () => {
+    if (!supabase) return
+    try {
+      await supabase.from('word_progress').delete().neq('word', '')
+      setProgressMap({})
+    } catch (err) {
+      console.error('Failed to clear progress:', err)
+    }
+  }, [])
+
+  return { progressMap, loadAllProgress, recordAttempt, clearAllProgress, loading }
 }

@@ -7,8 +7,8 @@ import SessionReport from './components/SessionReport'
 import HowItWorks from './components/HowItWorks'
 import { useMerriamWebster } from './hooks/useMerriamWebster'
 import { useWordProgress } from './hooks/useWordProgress'
+import { useSavedWords } from './hooks/useSavedWords'
 
-const WORDLIST_STORAGE_KEY = 'spelling_bee_wordlist'
 const FUN_MODE_KEY = 'spelling_bee_fun_mode'
 
 function pickWeightedWord(words, progressData, lastWord) {
@@ -51,7 +51,8 @@ export default function App() {
   const [showHelp, setShowHelp] = useState(false)
 
   const { fetchWord, loading: mwLoading } = useMerriamWebster()
-  const { progressMap, loadAllProgress, recordAttempt } = useWordProgress()
+  const { progressMap, loadAllProgress, recordAttempt, clearAllProgress } = useWordProgress()
+  const { loadWords, saveWords, clearWords } = useSavedWords()
   const progressRef = useRef(progressMap)
   progressRef.current = progressMap
 
@@ -81,28 +82,25 @@ export default function App() {
     return word
   }, [loadWordData])
 
-  // On mount, check for saved word list
+  // On mount, try to load saved word list from Supabase/localStorage
   useEffect(() => {
-    const saved = localStorage.getItem(WORDLIST_STORAGE_KEY)
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          startSession(parsed)
-          return
-        }
-      } catch { /* ignore */ }
-    }
-    setView('input')
+    (async () => {
+      const saved = await loadWords()
+      if (saved && saved.length > 0) {
+        startSession(saved)
+      } else {
+        setView('input')
+      }
+    })()
   }, [])
 
   const startSession = useCallback(async (wordList) => {
-    localStorage.setItem(WORDLIST_STORAGE_KEY, JSON.stringify(wordList))
+    await saveWords(wordList)
     setWords(wordList)
     const progress = await loadAllProgress()
     setView('practice')
     advanceWord(wordList, progress, null)
-  }, [loadAllProgress, advanceWord])
+  }, [saveWords, loadAllProgress, advanceWord])
 
   const handleWordsLoaded = useCallback((wordList) => {
     startSession(wordList)
@@ -124,8 +122,8 @@ export default function App() {
     advanceWord(words, progressRef.current, currentWord)
   }, [words, currentWord, advanceWord])
 
-  const handleChangeList = useCallback(() => {
-    localStorage.removeItem(WORDLIST_STORAGE_KEY)
+  const handleChangeList = useCallback(async () => {
+    await clearWords()
     setView('input')
     setSessionCorrect(0)
     setSessionTotal(0)
@@ -133,7 +131,15 @@ export default function App() {
     setSessionLog([])
     setCurrentWord(null)
     setWords([])
-  }, [])
+  }, [clearWords])
+
+  const handleResetProgress = useCallback(async () => {
+    await clearAllProgress()
+    setSessionCorrect(0)
+    setSessionTotal(0)
+    setSessionStreak(0)
+    setSessionLog([])
+  }, [clearAllProgress])
 
   const handleShowReport = useCallback(() => {
     setView('report')
@@ -180,9 +186,14 @@ export default function App() {
               </>
             )}
             {view === 'progress' && (
-              <button className="header__nav-btn" onClick={() => setView('practice')}>
-                Practice
-              </button>
+              <>
+                <button className="header__nav-btn" onClick={() => setView('practice')}>
+                  Practice
+                </button>
+                <button className="header__nav-btn header__nav-btn--danger" onClick={handleResetProgress}>
+                  Reset Progress
+                </button>
+              </>
             )}
             {view === 'report' && (
               <button className="header__nav-btn" onClick={() => setView('practice')}>
