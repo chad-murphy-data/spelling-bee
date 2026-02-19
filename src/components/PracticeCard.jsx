@@ -1,8 +1,43 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import AudioButton from './AudioButton'
 
+// Ranked list of preferred English voices (best first).
+// Chrome ships Google neural voices, Edge ships Microsoft ones.
+const PREFERRED_VOICES = [
+  'Google US English',
+  'Google UK English Female',
+  'Google UK English Male',
+  'Microsoft Zira',
+  'Microsoft David',
+  'Microsoft Mark',
+  'Samantha',        // macOS high-quality voice
+  'Karen',           // macOS Australian
+  'Daniel',          // macOS British
+]
+
+function pickBestVoice() {
+  const voices = window.speechSynthesis.getVoices()
+  const english = voices.filter(v => v.lang.startsWith('en'))
+  // Try preferred list first
+  for (const name of PREFERRED_VOICES) {
+    const match = english.find(v => v.name === name)
+    if (match) return match
+  }
+  // Fall back to any English voice, preferring non-default local voices
+  return english.find(v => !v.localService) || english[0] || null
+}
+
 function useTTS() {
   const [speaking, setSpeaking] = useState(null) // 'definition' | 'etymology' | null
+  const voiceRef = useRef(null)
+
+  // Voices load async in Chrome — listen for the event once
+  useEffect(() => {
+    const update = () => { voiceRef.current = pickBestVoice() }
+    update()
+    window.speechSynthesis.addEventListener('voiceschanged', update)
+    return () => window.speechSynthesis.removeEventListener('voiceschanged', update)
+  }, [])
 
   const speak = useCallback((text, label) => {
     window.speechSynthesis.cancel()
@@ -12,6 +47,7 @@ function useTTS() {
     }
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.rate = 0.9
+    if (voiceRef.current) utterance.voice = voiceRef.current
     utterance.onend = () => setSpeaking(null)
     utterance.onerror = () => setSpeaking(null)
     setSpeaking(label)
