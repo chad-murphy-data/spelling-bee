@@ -1,16 +1,45 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import AudioButton from './AudioButton'
 
+function useTTS() {
+  const [speaking, setSpeaking] = useState(null) // 'definition' | 'etymology' | null
+
+  const speak = useCallback((text, label) => {
+    window.speechSynthesis.cancel()
+    if (speaking === label) {
+      setSpeaking(null)
+      return
+    }
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.rate = 0.9
+    utterance.onend = () => setSpeaking(null)
+    utterance.onerror = () => setSpeaking(null)
+    setSpeaking(label)
+    window.speechSynthesis.speak(utterance)
+  }, [speaking])
+
+  const cancel = useCallback(() => {
+    window.speechSynthesis.cancel()
+    setSpeaking(null)
+  }, [])
+
+  return { speaking, speak, cancel }
+}
+
 export default function PracticeCard({ word, wordData, onSubmit, onNext, loading }) {
   const [guess, setGuess] = useState('')
   const [result, setResult] = useState(null) // { correct: bool }
+  const [revealed, setRevealed] = useState({}) // { definition: bool, etymology: bool }
   const inputRef = useRef(null)
+  const { speaking, speak, cancel } = useTTS()
 
   useEffect(() => {
     setGuess('')
     setResult(null)
+    setRevealed({})
+    cancel()
     inputRef.current?.focus()
-  }, [word])
+  }, [word, cancel])
 
   const handleSubmit = useCallback((e) => {
     e.preventDefault()
@@ -37,15 +66,67 @@ export default function PracticeCard({ word, wordData, onSubmit, onNext, loading
 
             {wordData?.definition && (
               <div className="practice-card__clue">
-                <span className="practice-card__clue-label">Definition</span>
-                <p className="practice-card__clue-text">{wordData.definition}</p>
+                <div className="practice-card__clue-header">
+                  <span className="practice-card__clue-label">Definition</span>
+                  <div className="practice-card__clue-actions">
+                    <button
+                      type="button"
+                      className={`tts-btn ${speaking === 'definition' ? 'tts-btn--active' : ''}`}
+                      onClick={() => speak(wordData.definition, 'definition')}
+                      aria-label="Hear definition"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                      </svg>
+                      {speaking === 'definition' ? 'Speaking...' : 'Hear It'}
+                    </button>
+                    <button
+                      type="button"
+                      className="reveal-btn"
+                      onClick={() => setRevealed(r => ({ ...r, definition: !r.definition }))}
+                      aria-label={revealed.definition ? 'Hide definition text' : 'Show definition text'}
+                    >
+                      {revealed.definition ? 'Hide' : 'Show Text'}
+                    </button>
+                  </div>
+                </div>
+                {revealed.definition && (
+                  <p className="practice-card__clue-text practice-card__clue-text--revealed">{wordData.definition}</p>
+                )}
               </div>
             )}
 
             {wordData?.etymology && (
               <div className="practice-card__clue">
-                <span className="practice-card__clue-label">Etymology</span>
-                <p className="practice-card__clue-text practice-card__clue-text--etymology">{wordData.etymology}</p>
+                <div className="practice-card__clue-header">
+                  <span className="practice-card__clue-label">Etymology</span>
+                  <div className="practice-card__clue-actions">
+                    <button
+                      type="button"
+                      className={`tts-btn ${speaking === 'etymology' ? 'tts-btn--active' : ''}`}
+                      onClick={() => speak(wordData.etymology, 'etymology')}
+                      aria-label="Hear etymology"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                      </svg>
+                      {speaking === 'etymology' ? 'Speaking...' : 'Hear It'}
+                    </button>
+                    <button
+                      type="button"
+                      className="reveal-btn"
+                      onClick={() => setRevealed(r => ({ ...r, etymology: !r.etymology }))}
+                      aria-label={revealed.etymology ? 'Hide etymology text' : 'Show etymology text'}
+                    >
+                      {revealed.etymology ? 'Hide' : 'Show Text'}
+                    </button>
+                  </div>
+                </div>
+                {revealed.etymology && (
+                  <p className="practice-card__clue-text practice-card__clue-text--etymology practice-card__clue-text--revealed">{wordData.etymology}</p>
+                )}
               </div>
             )}
           </>
