@@ -38,7 +38,7 @@ export default function AudioButton({ audioUrl }) {
         )}
       </svg>
       <span className="audio-button__label">
-        {playing ? 'Playing...' : 'Hear It'}
+        {playing ? 'Playing...' : 'Pronounce'}
       </span>
     </button>
   )
