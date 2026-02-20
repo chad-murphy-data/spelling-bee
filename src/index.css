@@ -230,6 +230,18 @@ body {
    Audio Button
    =================================== */
 
+.practice-card__pronunciation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.practice-card__pronunciation .audio-button {
+  margin: 0;
+}
+
 .audio-button {
   display: flex;
   flex-direction: column;
@@ -247,6 +259,26 @@ body {
   margin: 0 auto 1.5rem;
   box-shadow: var(--shadow);
   font-family: inherit;
+}
+
+.audio-button--tts {
+  border-color: var(--gray-400);
+  color: var(--gray-600);
+  width: 100px;
+  height: 100px;
+  border-width: 2px;
+}
+
+.audio-button--tts:hover:not(:disabled) {
+  background: var(--gray-600);
+  color: var(--white);
+  border-color: var(--gray-600);
+}
+
+.audio-button--tts.audio-button--playing {
+  background: var(--gray-600);
+  color: var(--white);
+  border-color: var(--gray-600);
 }
 
 .audio-button:hover:not(:disabled) {
@@ -1130,6 +1162,15 @@ body {
   .audio-button {
     width: 100px;
     height: 100px;
+  }
+
+  .audio-button--tts {
+    width: 80px;
+    height: 80px;
+  }
+
+  .practice-card__pronunciation {
+    gap: 1rem;
   }
 
   .wordlist-input__levels {

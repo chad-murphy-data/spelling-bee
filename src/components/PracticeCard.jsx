@@ -153,7 +153,23 @@ export default function PracticeCard({ word, wordData, onSubmit, onNext, loading
           <div className="practice-card__loading">Loading word data...</div>
         ) : (
           <>
-            <AudioButton audioUrl={wordData?.audioUrl} />
+            <div className="practice-card__pronunciation">
+              <AudioButton audioUrl={wordData?.audioUrl} />
+              <button
+                type="button"
+                className={`audio-button audio-button--tts ${speaking === 'word' ? 'audio-button--playing' : ''}`}
+                onClick={() => speak(word, 'word')}
+                aria-label="Hear the word via TTS"
+              >
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                </svg>
+                <span className="audio-button__label">
+                  {speaking === 'word' ? 'Speaking...' : 'Say My Word'}
+                </span>
+              </button>
+            </div>
 
             {voices.length > 1 && (
               <div className="voice-picker">
