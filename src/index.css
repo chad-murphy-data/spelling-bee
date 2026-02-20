@@ -564,17 +564,93 @@ body {
   max-width: 560px;
 }
 
+.wordlist-input__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
 .wordlist-input__title {
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--navy);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0;
+}
+
+.wordlist-input__back-btn {
+  font-size: 0.8125rem;
+  padding: 0.375rem 0.875rem;
 }
 
 .wordlist-input__subtitle {
   font-size: 0.875rem;
   color: var(--gray-500);
   margin-bottom: 1.25rem;
+}
+
+.wordlist-input__levels {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.wordlist-input__level-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 1rem 0.75rem;
+  border-radius: var(--radius);
+  border: 2px solid var(--gray-200);
+  background: var(--white);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.wordlist-input__level-btn:hover:not(:disabled) {
+  border-color: var(--navy);
+  background: var(--gray-50);
+  box-shadow: var(--shadow-md);
+}
+
+.wordlist-input__level-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wordlist-input__level-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.wordlist-input__level-desc {
+  font-size: 0.75rem;
+  color: var(--gray-400);
+  font-weight: 500;
+}
+
+.wordlist-input__divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  color: var(--gray-400);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.wordlist-input__divider::before,
+.wordlist-input__divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--gray-200);
 }
 
 .wordlist-input__actions-top {
@@ -1054,5 +1130,13 @@ body {
   .audio-button {
     width: 100px;
     height: 100px;
+  }
+
+  .wordlist-input__levels {
+    grid-template-columns: 1fr;
+  }
+
+  .wordlist-input__actions-top {
+    flex-wrap: wrap;
   }
 }

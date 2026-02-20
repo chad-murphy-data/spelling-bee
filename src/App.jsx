@@ -52,7 +52,7 @@ export default function App() {
 
   const { fetchWord, loading: mwLoading } = useMerriamWebster()
   const { progressMap, loadAllProgress, recordAttempt, clearAllProgress } = useWordProgress()
-  const { loadWords, saveWords, clearWords } = useSavedWords()
+  const { loadWords, saveWords } = useSavedWords()
   const progressRef = useRef(progressMap)
   progressRef.current = progressMap
 
@@ -97,6 +97,10 @@ export default function App() {
   const startSession = useCallback(async (wordList) => {
     await saveWords(wordList)
     setWords(wordList)
+    setSessionCorrect(0)
+    setSessionTotal(0)
+    setSessionStreak(0)
+    setSessionLog([])
     const progress = await loadAllProgress()
     setView('practice')
     advanceWord(wordList, progress, null)
@@ -122,16 +126,15 @@ export default function App() {
     advanceWord(words, progressRef.current, currentWord)
   }, [words, currentWord, advanceWord])
 
-  const handleChangeList = useCallback(async () => {
-    await clearWords()
+  const handleChangeList = useCallback(() => {
     setView('input')
-    setSessionCorrect(0)
-    setSessionTotal(0)
-    setSessionStreak(0)
-    setSessionLog([])
-    setCurrentWord(null)
-    setWords([])
-  }, [clearWords])
+  }, [])
+
+  const handleCancelInput = useCallback(() => {
+    if (words.length > 0) {
+      setView('practice')
+    }
+  }, [words])
 
   const handleResetProgress = useCallback(async () => {
     await clearAllProgress()
@@ -214,7 +217,10 @@ export default function App() {
         {view === 'input' && (
           <>
             <HowItWorks />
-            <WordListInput onWordsLoaded={handleWordsLoaded} />
+            <WordListInput
+              onWordsLoaded={handleWordsLoaded}
+              onCancel={words.length > 0 ? handleCancelInput : undefined}
+            />
           </>
         )}
 
