@@ -17,10 +17,17 @@ async function extractTextFromPdf(file) {
   return pages.join('\n')
 }
 
-export default function WordListInput({ onWordsLoaded }) {
+const LEVELS = [
+  { key: 'level1', label: 'Level 1', description: 'Foundation words' },
+  { key: 'level2', label: 'Level 2', description: 'Intermediate words' },
+  { key: 'level3', label: 'Level 3', description: 'Advanced words' },
+]
+
+export default function WordListInput({ onWordsLoaded, onCancel }) {
   const [text, setText] = useState('')
   const [error, setError] = useState(null)
   const [pdfLoading, setPdfLoading] = useState(false)
+  const [levelLoading, setLevelLoading] = useState(null)
 
   const parseWords = useCallback((raw) => {
     return raw
@@ -91,13 +98,61 @@ export default function WordListInput({ onWordsLoaded }) {
     }
   }, [parseWords, onWordsLoaded])
 
+  const handleLoadLevel = useCallback(async (levelKey) => {
+    setLevelLoading(levelKey)
+    setError(null)
+    try {
+      const modules = {
+        level1: () => import('../data/level1.txt?raw'),
+        level2: () => import('../data/level2.txt?raw'),
+        level3: () => import('../data/level3.txt?raw'),
+      }
+      const module = await modules[levelKey]()
+      const words = parseWords(module.default)
+      if (words.length > 0) {
+        onWordsLoaded(words)
+      } else {
+        setError(`${levelKey} word list is empty.`)
+      }
+    } catch {
+      setError(`Could not load ${levelKey} word list.`)
+    } finally {
+      setLevelLoading(null)
+    }
+  }, [parseWords, onWordsLoaded])
+
   return (
     <div className="wordlist-input">
       <div className="wordlist-input__card">
-        <h2 className="wordlist-input__title">Load Word List</h2>
+        <div className="wordlist-input__header">
+          <h2 className="wordlist-input__title">Load Word List</h2>
+          {onCancel && (
+            <button className="btn btn--secondary wordlist-input__back-btn" onClick={onCancel}>
+              Never Mind
+            </button>
+          )}
+        </div>
         <p className="wordlist-input__subtitle">
-          Paste your word list below (one word per line), or upload a .txt or .pdf file.
+          Choose a difficulty level, or load your own word list.
         </p>
+
+        <div className="wordlist-input__levels">
+          {LEVELS.map(level => (
+            <button
+              key={level.key}
+              className={`wordlist-input__level-btn ${levelLoading === level.key ? 'btn--loading' : ''}`}
+              onClick={() => handleLoadLevel(level.key)}
+              disabled={levelLoading !== null}
+            >
+              <span className="wordlist-input__level-label">{level.label}</span>
+              <span className="wordlist-input__level-desc">{level.description}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="wordlist-input__divider">
+          <span>or load your own</span>
+        </div>
 
         <div className="wordlist-input__actions-top">
           <label className="btn btn--secondary wordlist-input__file-label">
@@ -115,7 +170,7 @@ export default function WordListInput({ onWordsLoaded }) {
 
         <textarea
           className="wordlist-input__textarea"
-          placeholder="aberration&#10;abscond&#10;abstinence&#10;accolade&#10;..."
+          placeholder={"aberration\nabscond\nabstinence\naccolade\n..."}
           value={text}
           onChange={(e) => setText(e.target.value)}
           rows={12}
