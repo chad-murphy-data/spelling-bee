@@ -264,8 +264,8 @@ body {
 .audio-button--tts {
   border-color: var(--gray-400);
   color: var(--gray-600);
-  width: 100px;
-  height: 100px;
+  width: 120px;
+  height: 120px;
   border-width: 2px;
 }
 
@@ -1165,8 +1165,8 @@ body {
   }
 
   .audio-button--tts {
-    width: 80px;
-    height: 80px;
+    width: 100px;
+    height: 100px;
   }
 
   .practice-card__pronunciation {

@@ -166,7 +166,7 @@ export default function PracticeCard({ word, wordData, onSubmit, onNext, loading
                   <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
                 </svg>
                 <span className="audio-button__label">
-                  {speaking === 'word' ? 'Speaking...' : 'Say My Word'}
+                  {speaking === 'word' ? 'Speaking...' : 'Hear from Text to Speech'}
                 </span>
               </button>
             </div>
