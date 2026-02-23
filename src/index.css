@@ -264,8 +264,8 @@ body {
 .audio-button--tts {
   border-color: var(--gray-400);
   color: var(--gray-600);
-  width: 100px;
-  height: 100px;
+  width: 120px;
+  height: 120px;
   border-width: 2px;
 }
 
@@ -470,6 +470,89 @@ body {
   font-size: 0.9375rem;
   font-style: italic;
   color: var(--gray-500);
+}
+
+/* Voice spelling toggle + mic button */
+
+.voice-spelling {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.voice-spelling__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--gray-300);
+  background: var(--white);
+  color: var(--gray-500);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.voice-spelling__toggle:hover {
+  border-color: var(--gray-400);
+  color: var(--gray-700);
+}
+
+.voice-spelling__toggle--active {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: var(--white);
+}
+
+.voice-spelling__toggle--active:hover {
+  background: var(--gray-800);
+  border-color: var(--gray-800);
+  color: var(--white);
+}
+
+.voice-spelling__icon {
+  flex-shrink: 0;
+}
+
+.voice-spelling__hint {
+  font-size: 0.75rem;
+  color: var(--gray-400);
+}
+
+.mic-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-width: 44px;
+  border-radius: var(--radius);
+  border: 2px solid var(--gray-300);
+  background: var(--white);
+  color: var(--gray-500);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mic-btn:hover {
+  border-color: var(--navy);
+  color: var(--navy);
+}
+
+.mic-btn--listening {
+  border-color: var(--red);
+  background: var(--red);
+  color: var(--white);
+  animation: mic-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes mic-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
 }
 
 .practice-card__form {
@@ -1165,8 +1248,8 @@ body {
   }
 
   .audio-button--tts {
-    width: 80px;
-    height: 80px;
+    width: 100px;
+    height: 100px;
   }
 
   .practice-card__pronunciation {
