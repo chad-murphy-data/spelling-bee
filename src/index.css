@@ -524,6 +524,58 @@ body {
   color: var(--gray-400);
 }
 
+.voice-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  animation: fadeSlideIn 0.2s ease;
+}
+
+.voice-tip__content {
+  flex: 1;
+}
+
+.voice-tip__title {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 0.375rem;
+}
+
+.voice-tip__steps {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.8125rem;
+  color: var(--gray-600);
+  line-height: 1.6;
+}
+
+.voice-tip__dismiss {
+  flex-shrink: 0;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--navy);
+  background: var(--white);
+  color: var(--navy);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.voice-tip__dismiss:hover {
+  background: var(--navy);
+  color: var(--white);
+}
+
 .mic-btn {
   display: flex;
   align-items: center;

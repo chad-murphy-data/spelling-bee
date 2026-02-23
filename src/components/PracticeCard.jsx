@@ -3,6 +3,7 @@ import AudioButton from './AudioButton'
 import { useVoiceSpelling } from '../hooks/useVoiceSpelling'
 
 const VOICE_INPUT_KEY = 'spelling_bee_voice_input'
+const VOICE_TIP_DISMISSED_KEY = 'spelling_bee_voice_tip_dismissed'
 
 // Ranked list of preferred English voices (best first).
 const PREFERRED_VOICES = [
@@ -123,6 +124,12 @@ export default function PracticeCard({ word, wordData, onSubmit, onNext, loading
   const { speaking, speak, cancel, voices, selectedVoice, changeVoice } = useTTS()
   const { listening, supported: voiceSupported, start: startListening, stop: stopListening } = useVoiceSpelling()
   const [voiceEnabled, setVoiceEnabled] = useState(() => localStorage.getItem(VOICE_INPUT_KEY) === 'true')
+  const [showVoiceTip, setShowVoiceTip] = useState(() => localStorage.getItem(VOICE_TIP_DISMISSED_KEY) !== 'true')
+
+  const dismissVoiceTip = useCallback(() => {
+    setShowVoiceTip(false)
+    localStorage.setItem(VOICE_TIP_DISMISSED_KEY, 'true')
+  }, [])
 
   const toggleVoiceMode = useCallback(() => {
     setVoiceEnabled(prev => {
@@ -309,7 +316,21 @@ export default function PracticeCard({ word, wordData, onSubmit, onNext, loading
             </svg>
             Voice Spelling {voiceEnabled ? 'On' : 'Off'}
           </button>
-          {voiceEnabled && (
+          {voiceEnabled && showVoiceTip && (
+            <div className="voice-tip">
+              <div className="voice-tip__content">
+                <strong className="voice-tip__title">How Voice Spelling works</strong>
+                <ol className="voice-tip__steps">
+                  <li>Tap the mic button to start listening</li>
+                  <li>Say each letter clearly, one at a time</li>
+                  <li>Say &quot;backspace&quot; to undo the last letter</li>
+                  <li>Edit the text field if needed, then hit Submit</li>
+                </ol>
+              </div>
+              <button type="button" className="voice-tip__dismiss" onClick={dismissVoiceTip} aria-label="Dismiss tip">Got it</button>
+            </div>
+          )}
+          {voiceEnabled && !showVoiceTip && (
             <span className="voice-spelling__hint">
               Say each letter clearly &middot; say &quot;backspace&quot; to undo
             </span>
