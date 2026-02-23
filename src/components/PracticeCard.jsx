@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import AudioButton from './AudioButton'
+import { useVoiceSpelling } from '../hooks/useVoiceSpelling'
+
+const VOICE_INPUT_KEY = 'spelling_bee_voice_input'
 
 // Ranked list of preferred English voices (best first).
 const PREFERRED_VOICES = [
@@ -118,6 +121,33 @@ export default function PracticeCard({ word, wordData, onSubmit, onNext, loading
   const [funMessage, setFunMessage] = useState(null)
   const inputRef = useRef(null)
   const { speaking, speak, cancel, voices, selectedVoice, changeVoice } = useTTS()
+  const { listening, supported: voiceSupported, start: startListening, stop: stopListening } = useVoiceSpelling()
+  const [voiceEnabled, setVoiceEnabled] = useState(() => localStorage.getItem(VOICE_INPUT_KEY) === 'true')
+
+  const toggleVoiceMode = useCallback(() => {
+    setVoiceEnabled(prev => {
+      const next = !prev
+      localStorage.setItem(VOICE_INPUT_KEY, String(next))
+      if (!next) stopListening()
+      return next
+    })
+  }, [stopListening])
+
+  const handleVoiceEvent = useCallback((event) => {
+    if (event.type === 'letter') {
+      setGuess(prev => prev + event.value)
+    } else if (event.type === 'backspace') {
+      setGuess(prev => prev.slice(0, -1))
+    }
+  }, [])
+
+  const toggleMic = useCallback(() => {
+    if (listening) {
+      stopListening()
+    } else {
+      startListening(handleVoiceEvent)
+    }
+  }, [listening, startListening, stopListening, handleVoiceEvent])
 
   useEffect(() => {
     setGuess('')
@@ -125,8 +155,14 @@ export default function PracticeCard({ word, wordData, onSubmit, onNext, loading
     setRevealed({})
     setFunMessage(null)
     cancel()
+    stopListening()
     inputRef.current?.focus()
-  }, [word, cancel])
+  }, [word, cancel, stopListening])
+
+  // Stop listening when answer is submitted
+  useEffect(() => {
+    if (result !== null) stopListening()
+  }, [result, stopListening])
 
   const handleSubmit = useCallback((e) => {
     e.preventDefault()
@@ -258,13 +294,36 @@ export default function PracticeCard({ word, wordData, onSubmit, onNext, loading
         )}
       </div>
 
+      {voiceSupported && (
+        <div className="voice-spelling">
+          <button
+            type="button"
+            className={`voice-spelling__toggle ${voiceEnabled ? 'voice-spelling__toggle--active' : ''}`}
+            onClick={toggleVoiceMode}
+          >
+            <svg className="voice-spelling__icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              <line x1="12" y1="19" x2="12" y2="23" />
+              <line x1="8" y1="23" x2="16" y2="23" />
+            </svg>
+            Voice Spelling {voiceEnabled ? 'On' : 'Off'}
+          </button>
+          {voiceEnabled && (
+            <span className="voice-spelling__hint">
+              Say each letter clearly &middot; say &quot;backspace&quot; to undo
+            </span>
+          )}
+        </div>
+      )}
+
       <form className="practice-card__form" onSubmit={handleSubmit}>
         <div className={`practice-card__input-wrap ${result !== null ? (result.correct ? 'practice-card__input-wrap--correct' : 'practice-card__input-wrap--incorrect') : ''}`}>
           <input
             ref={inputRef}
             type="text"
             className="practice-card__input"
-            placeholder="Type your spelling..."
+            placeholder={voiceEnabled ? 'Spell it out loud or type...' : 'Type your spelling...'}
             value={guess}
             onChange={(e) => setGuess(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -274,6 +333,22 @@ export default function PracticeCard({ word, wordData, onSubmit, onNext, loading
             spellCheck="false"
           />
         </div>
+
+        {voiceEnabled && result === null && (
+          <button
+            type="button"
+            className={`mic-btn ${listening ? 'mic-btn--listening' : ''}`}
+            onClick={toggleMic}
+            aria-label={listening ? 'Stop listening' : 'Start listening'}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+              <line x1="12" y1="19" x2="12" y2="23" />
+              <line x1="8" y1="23" x2="16" y2="23" />
+            </svg>
+          </button>
+        )}
 
         {result === null ? (
           <button
